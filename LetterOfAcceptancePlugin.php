@@ -26,7 +26,7 @@ class LetterOfAcceptancePlugin extends GenericPlugin {
 
     public function register($category, $path, $mainContextId = null)
     {
-        $success = parent::register($category, $path);
+        $success = parent::register($category, $path, $mainContextId);
 
         if ($success && $this->getEnabled()) {
             
@@ -60,6 +60,9 @@ class LetterOfAcceptancePlugin extends GenericPlugin {
         /** @var PageRouter */
         $router = $request->getRouter();
         $handler = $router->getHandler();
+        if (!$handler) {
+            return;
+        }
         $userRoles = (array) $handler->getAuthorizedContextObject(Application::ASSOC_TYPE_USER_ROLES);
 
         if (count(array_intersect([Role::ROLE_ID_MANAGER, Role::ROLE_ID_SITE_ADMIN], $userRoles))) {
