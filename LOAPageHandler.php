@@ -10,6 +10,8 @@ use APP\submission\Submission;
 use Illuminate\Support\Facades\Mail;
 use PKP\config\Config;
 use PKP\core\PKPRequest;
+use PKP\security\authorization\ContextAccessPolicy;
+use PKP\security\Role;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class LOAPageHandler extends Handler {
@@ -21,13 +23,22 @@ class LOAPageHandler extends Handler {
 
     public function __construct(public LetterOfAcceptancePlugin $plugin)
     {
-        parent::__construct();   
+        parent::__construct();
+        $this->addRoleAssignment(
+            [Role::ROLE_ID_MANAGER, Role::ROLE_ID_SITE_ADMIN],
+            ['get']
+        );
+    }
+
+    public function authorize($request, &$args, $roleAssignments)
+    {
+        $this->addPolicy(new ContextAccessPolicy($request, $roleAssignments));
+        return parent::authorize($request, $args, $roleAssignments);
     }
 
     public function get($args, PKPRequest $request)
     {
-
-        $submissionId = $args[0];
+        $submissionId = $args[0] ?? null;
         $this->submission = Repo::submission()->get((int) $submissionId);
         if (!$this->submission) {
             throw new NotFoundHttpException();
@@ -42,22 +53,27 @@ class LOAPageHandler extends Handler {
             : '';
         $site = $request->getSite();
         $journal = $request->getContext();
-        
+
+        if (!$journal) {
+            throw new NotFoundHttpException();
+        }
+
         // Create letter
         // First get template
-        $template = $this->plugin->getSetting($request->getContext()->getId(), Constants::SETTING_TEMPLATE)
+        $template = $this->plugin->getSetting($journal->getId(), Constants::SETTING_TEMPLATE)
             ?: $this->plugin->getSetting(null, Constants::SETTING_TEMPLATE);
 
         $journalLogo = '';
         $thumb = $journal->getLocalizedData('journalThumbnail');
-        if($thumb) {
+        if ($thumb) {
             $journalFilesPath = $request->getBaseUrl() . '/' . Config::getVar('files', 'public_files_dir') . '/journals/';
-            $url = $journalFilesPath . $journal->getId() . '/' . $thumb['uploadName'] . '?v=' . sha1($thumb['dateUploaded']);
-            $journalLogo = '<img style="max-width:200px;height:auto" src="' . $url . '" />';
+            $uploadName = rawurlencode($thumb['uploadName']);
+            $url = $journalFilesPath . $journal->getId() . '/' . $uploadName . '?v=' . sha1($thumb['dateUploaded']);
+            $journalLogo = '<img style="max-width:200px;height:auto" src="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" />';
         }
 
         // Next Build up variables
-        $args = [
+        $templateVars = [
             'currentDate' => date('d M Y'),
             'authorFullName' => $primaryAuthor ? $primaryAuthor->getFullName() : 'Unknown',
             'authorAffiliation' => $affiliation,
@@ -71,9 +87,8 @@ class LOAPageHandler extends Handler {
         ];
 
         // Replace variables (For some reason PKP does this in Mail, but it's fine to use)
-        $template = Mail::compileParams($template, $args);
+        $template = Mail::compileParams($template, $templateVars);
 
-        if (!empty($_GET['html'])) {
         if ($request->getUserVar('html')) {
             echo $template;
         } else {
