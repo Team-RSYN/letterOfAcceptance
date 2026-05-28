@@ -58,6 +58,10 @@ class LOAPageHandler extends Handler {
             throw new NotFoundHttpException();
         }
 
+        if ($this->submission->getData('contextId') !== $journal->getId()) {
+            throw new NotFoundHttpException();
+        }
+
         // Create letter
         // First get template
         $template = $this->plugin->getSetting($journal->getId(), Constants::SETTING_TEMPLATE)
