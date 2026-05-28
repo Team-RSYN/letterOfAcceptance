@@ -58,7 +58,7 @@ class LOAPageHandler extends Handler {
             throw new NotFoundHttpException();
         }
 
-        if ($this->submission->getData('contextId') !== $journal->getId()) {
+        if ((int) $this->submission->getData('contextId') !== (int) $journal->getId()) {
             throw new NotFoundHttpException();
         }
 
