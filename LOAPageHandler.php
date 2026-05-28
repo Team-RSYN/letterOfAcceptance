@@ -75,7 +75,7 @@ class LOAPageHandler extends Handler {
         // Replace variables (For some reason PKP does this in Mail, but it's fine to use)
         $template = Mail::compileParams($template, $args);
 
-        if(isset($_GET['html'])) {
+        if (!empty($_GET['html'])) {
             echo $template;
         } else {
             // Use MPDF bundled with PKPLib to export a PDF
