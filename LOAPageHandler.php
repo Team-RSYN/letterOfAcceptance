@@ -71,10 +71,14 @@ class LOAPageHandler extends Handler {
         $thumb = $journal->getLocalizedData('journalThumbnail');
         if ($thumb) {
             $journalFilesPath = $request->getBaseUrl() . '/' . Config::getVar('files', 'public_files_dir') . '/journals/';
+            $rawUploadName = isset($thumb['uploadName']) && is_string($thumb['uploadName']) ? $thumb['uploadName'] : '';
+            $rawDateUploaded = isset($thumb['dateUploaded']) ? (string) $thumb['dateUploaded'] : '';
             // Sanitize uploadName: allow only alphanumeric characters, hyphens, underscores and dots
-            $uploadName = preg_replace('/[^a-zA-Z0-9._-]/', '', $thumb['uploadName']);
-            if ($uploadName) {
-                $url = $journalFilesPath . $journal->getId() . '/' . rawurlencode($uploadName) . '?v=' . sha1($thumb['dateUploaded']);
+            $uploadName = preg_replace('/[^a-zA-Z0-9._-]/', '', $rawUploadName);
+            // Normalize to basename and reject directory traversal values or consecutive dots
+            $uploadName = basename($uploadName);
+            if ($uploadName && $uploadName !== '.' && $uploadName !== '..' && !str_contains($uploadName, '..')) {
+                $url = $journalFilesPath . $journal->getId() . '/' . rawurlencode($uploadName) . '?v=' . sha1($rawDateUploaded);
                 $journalLogo = '<img style="max-width:200px;height:auto" src="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" />';
             }
         }
