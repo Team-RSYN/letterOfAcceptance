@@ -73,6 +73,7 @@ class LOAPageHandler extends Handler {
         // Replace variables (For some reason PKP does this in Mail, but it's fine to use)
         $template = Mail::compileParams($template, $args);
 
+        if (!empty($_GET['html'])) {
         if ($request->getUserVar('html')) {
             echo $template;
         } else {
