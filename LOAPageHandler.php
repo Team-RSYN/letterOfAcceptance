@@ -38,8 +38,8 @@ class LOAPageHandler extends Handler {
 
     public function get($args, PKPRequest $request)
     {
-        $submissionId = $args[0] ?? null;
-        $this->submission = Repo::submission()->get((int) $submissionId);
+        $submissionId = (int) ($args[0] ?? 0);
+        $this->submission = Repo::submission()->get($submissionId);
         if (!$this->submission) {
             throw new NotFoundHttpException();
         }
