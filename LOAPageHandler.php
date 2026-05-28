@@ -67,9 +67,12 @@ class LOAPageHandler extends Handler {
         $thumb = $journal->getLocalizedData('journalThumbnail');
         if ($thumb) {
             $journalFilesPath = $request->getBaseUrl() . '/' . Config::getVar('files', 'public_files_dir') . '/journals/';
-            $uploadName = rawurlencode($thumb['uploadName']);
-            $url = $journalFilesPath . $journal->getId() . '/' . $uploadName . '?v=' . sha1($thumb['dateUploaded']);
-            $journalLogo = '<img style="max-width:200px;height:auto" src="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" />';
+            // Sanitize uploadName: allow only alphanumeric characters, hyphens, underscores and dots
+            $uploadName = preg_replace('/[^a-zA-Z0-9._-]/', '', $thumb['uploadName']);
+            if ($uploadName) {
+                $url = $journalFilesPath . $journal->getId() . '/' . rawurlencode($uploadName) . '?v=' . sha1($thumb['dateUploaded']);
+                $journalLogo = '<img style="max-width:200px;height:auto" src="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" />';
+            }
         }
 
         // Next Build up variables

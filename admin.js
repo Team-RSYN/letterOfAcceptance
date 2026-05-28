@@ -27,7 +27,7 @@ pkp.registry.storeExtend("workflow", (piniaContext) => {
             }
             let baseUrl = publishedUrl.substring(0, articleViewIndex);
             // Now we open a new window to display the submission LOA
-            window.open(baseUrl + '/loa/get/' + encodeURIComponent(submissionId));
+            window.open(baseUrl + '/loa/get/' + submissionId);
         }
 
         items.push({
