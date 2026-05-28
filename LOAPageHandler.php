@@ -29,19 +29,17 @@ class LOAPageHandler extends Handler {
 
         $submissionId = $args[0];
         $this->submission = Repo::submission()->get((int) $submissionId);
+        if (!$this->submission) {
+            throw new NotFoundHttpException();
+        }
         $this->publication = $this->submission->getCurrentPublication();
-        if(!$this->publication) {
+        if (!$this->publication) {
             throw new NotFoundHttpException();
         }
         $primaryAuthor = $this->publication->getPrimaryAuthor();
-        $affiliation = [];
-        if($primaryAuthor) {
-            $authorAffiliations = $primaryAuthor->getAffiliations();
-            foreach($authorAffiliations as $affItem) {
-				$affiliationRaw = $affItem->getLocalizedName();
-				$affiliation[] = $affiliationRaw;
-            }
-        }
+        $affiliation = $primaryAuthor
+            ? $primaryAuthor->getLocalizedAffiliationNamesAsString()
+            : '';
         $site = $request->getSite();
         $journal = $request->getContext();
         
@@ -62,7 +60,7 @@ class LOAPageHandler extends Handler {
         $args = [
             'currentDate' => date('d M Y'),
             'authorFullName' => $primaryAuthor ? $primaryAuthor->getFullName() : 'Unknown',
-            'authorAffiliation' => implode("; ", $affiliation),
+            'authorAffiliation' => $affiliation,
             'submissionTitle' => $this->publication->getLocalizedFullTitle(),
             'submissionId' => $this->submission->getId(),
             'journalName' => $journal->getLocalizedName(),
@@ -75,7 +73,7 @@ class LOAPageHandler extends Handler {
         // Replace variables (For some reason PKP does this in Mail, but it's fine to use)
         $template = Mail::compileParams($template, $args);
 
-        if(@$_GET['html']) {
+        if ($request->getUserVar('html')) {
             echo $template;
         } else {
             // Use MPDF bundled with PKPLib to export a PDF
@@ -85,11 +83,6 @@ class LOAPageHandler extends Handler {
         }
 
         exit;
-    }
-
-    protected function canUserAccess($context, $user, $userRoles)
-    {
-        return true;
     }
 
 }
